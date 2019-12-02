@@ -1,0 +1,28 @@
+{
+  "name": "gitbook-plugin-theme-integration",
+  "version": "1.0.0",
+  "description": "gitbook整合插件",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "gitbook",
+    "gitbook-plugin-theme-integration"
+  ],
+  "author": "riverfang",
+  "license": "MIT",
+  "dependencies": {
+    "html-entities": "1.2.0",
+    "q": "1.1.2",
+    "phantom": "^0.8.3",
+    "phantomjs": "~1.9.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/riverfang/gitbook-plugin-theme-integration.git"
+  },
+  "engines": {
+    "gitbook": ">=3.0.0"
+  }
+}
