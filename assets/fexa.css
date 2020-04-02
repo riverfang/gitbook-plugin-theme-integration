@@ -2,6 +2,17 @@ body {
   font-family: "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", "\9ED1\4F53", Arial, sans-serif;
   letter-spacing: .2px;
   text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+.page-wrapper {
+  position: absolute !important;
+  height: calc(100% - 50px) !important;
+  width: 100% !important;
+}
+.book-footer {
+  position: absolute;
+  bottom: 0;
+  left: 25%;
 }
 .markdown-section h1,
 .markdown-section h2,

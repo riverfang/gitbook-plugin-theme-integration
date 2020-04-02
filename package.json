@@ -1,6 +1,6 @@
 {
   "name": "gitbook-plugin-theme-integration",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "gitbook整合插件",
   "main": "index.js",
   "scripts": {
