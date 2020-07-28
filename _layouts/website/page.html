@@ -1,7 +1,6 @@
 {% extends template.self %}
 {% block style %}
     {{ super() }}
-
     {% if config.pluginsConfig['mermaid-gb3'].theme %}
         {% set mermaidAsset = 'gitbook-plugin-theme-integration/mermaid/mermaid.' %}
         {% set mermaidTheme = mermaidAsset + config.pluginsConfig['integration'].theme + '.css' %}
@@ -15,7 +14,7 @@
 		<span class="title"></span>
 		{% block search_input %}{% endblock %}
 		<ul class="header-nav">
-			{% for nav in book.interation.navs -%}
+			{% for nav in book.integration.navs -%}
 			<li>
 				<a href="{{nav.url}}" target="{{ nav.target}}">{{ nav.name }}</a>
 			</li>

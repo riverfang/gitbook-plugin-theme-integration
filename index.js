@@ -1,31 +1,34 @@
 var fs = require('fs');
 var path = require('path');
 var Entities = require('html-entities').AllHtmlEntities;
-
+var crypto = require('crypto');
+const pluginName = require('./package.json').name
 var Html = new Entities();
-// Map of Lunr ref to document
 var documentsStore = {};
+var pageBeforeHooks = [];
+const childProcess = require('child_process');
+var umlPath,output;
 module.exports = {
     website: {
         assets: './assets/',
         js: [
-            'fexa.js',
-            'expandable-chapters.js',
-            'code.js',
-            'back-to-top-button.js',
-            'jquery.mark.min.js',
-            'search.js',
+            'theme/fexa.js',
+            'expandable/expandable-chapters.js',
+            'code/code.js',
+            'back-to-top/back-to-top-button.js',
+            'search/search.js',
             'mermaid/plugin.js',
             'fancybox/plugin.js',
             'fancybox/jquery-1.10.1.min.js',
-            'fancybox/jquery.fancybox-1.3.4.js'
+            'fancybox/jquery.fancybox-1.3.4.js',
+            'fancybox/jquery.mark.min.js',
         ],
         css: [
-            'fexa.css',
-            'expandable-chapters.css',
-            'code.css',
-            'back-to-top-button.css',
-            'search.css',
+            'theme/fexa.css',
+            'expandable/expandable-chapters.css',
+            'code/code.css',
+            'back-to-top/back-to-top-button.css',
+            'search/search.css',
             'mermaid/mermaid.css',
             'fancybox/jquery.fancybox-1.3.4.css'
         ]
@@ -34,16 +37,24 @@ module.exports = {
         init() { 
             var variables = this.config.get('variables') || {};
             var integrationCfg = this.config.get('pluginsConfig').integration;
+            output = (integrationCfg ? (integrationCfg.output || '_book') : '_book') + '/gitbook';
             variables.copyright = integrationCfg.copyright || `Copyright & Copy @${new Date().getFullYear()} ${this.config.get('author')}. All rights reserved.`;
             variables.modification =  `${integrationCfg.modify_label || '该文章修订时间：'} ${fmtDate(new Date(), integrationCfg.modify_format || 'yyyy-MM-dd hh:mm:ss')}`;
             variables.integration = integrationCfg;
             this.config.set('variables', variables);
+            umlPath = path.join(process.cwd(), output, 'images', 'uml');
+            fs.mkdir(umlPath, { recursive: true }, function(error) {});
         },
         config: function(config) {
-         
           return config;
         },
-        'page:before': processMermaidBlockList,
+        'page:before': function(page) {
+            var that = this;
+            pageBeforeHooks.forEach(function(fun) {
+               page = fun.call(that, page);
+            });
+            return page;
+        },
         page: function(page) {
             if (this.output.name != 'website' || page.search === false) {
                 return page;
@@ -70,19 +81,16 @@ module.exports = {
             };
 
             documentsStore[doc.url] = doc;
-
             return page;
         },
         finish: function () {
             var configOption = this.config.get('pluginsConfig')['integration'];
-            var output = configOption ? (configOption.output || '_book') : '_book';
             var pathFile;
-
             // favicon
             pathFile = configOption && configOption.favicon;
             if (pathFile) {
                 var faviconPath = path.join(process.cwd(), pathFile);
-                var gitbookFaviconPath = path.join(process.cwd(), output, 'gitbook', 'images', 'favicon.ico');
+                var gitbookFaviconPath = path.join(process.cwd(), output, 'images', 'favicon.ico');
                 if (fs.existsSync(faviconPath)) {
                     fs.writeFileSync(gitbookFaviconPath, fs.readFileSync(faviconPath));
                 }
@@ -92,7 +100,7 @@ module.exports = {
             pathFile = configOption && configOption.appleTouchIconPrecomposed152;
             if (pathFile) {
                 var appleTouchIconPrecomposed152 = path.join(process.cwd(), pathFile);
-                var gitbookAppleTouchPath = path.join(process.cwd(), output, 'gitbook', 'images', 'apple-touch-icon-precomposed-152.png');
+                var gitbookAppleTouchPath = path.join(process.cwd(), output, 'images', 'apple-touch-icon-precomposed-152.png');
                 if (fs.existsSync(appleTouchIconPrecomposed152)) {
                     fs.writeFileSync(gitbookAppleTouchPath, fs.readFileSync(appleTouchIconPrecomposed152));
                 }
@@ -102,7 +110,7 @@ module.exports = {
             pathFile = configOption && configOption.logo;
             if(pathFile){
                 var logoPath = path.join(process.cwd(), pathFile);
-                var pluginLogoPath = path.join(process.cwd(), output, 'gitbook','gitbook-plugin-theme-integration',"logo.jpg");
+                var pluginLogoPath = path.join(process.cwd(), output, pluginName,"logo.png");
                 if (fs.existsSync(logoPath)) {
                     fs.writeFileSync(pluginLogoPath, fs.readFileSync(logoPath));
                 }
@@ -138,59 +146,33 @@ var fmtDate = function (value,fmt) {
         return "";
     }
 }
-
-function processBlock(body) {
-    return convertToSvg(body)
-        .then(function (svgCode) {
-            return svgCode.replace(/mermaidChart1/g, getId());
-        });
-  }
-  
-  function convertToSvg(mermaidCode) {
-    var deferred = Q.defer();
-    phantom.create({binary: PHANTOMJS_BIN}, function (ph) {
-      ph.createPage(function (page) {
-  
-        var htmlPagePath = path.join(__dirname, 'convert/converter.html');
-  
-        page.open(htmlPagePath, function (status) {
-          page.evaluate(
-            function (code) {
-              return renderToSvg(code);
-            },
-            function (result) {
-              ph.exit();
-              deferred.resolve(result);
-            },
-            mermaidCode);
-        });
-      });
-    });
-  
-    return deferred.promise;
-  }
-  
-  function getId() {
-    function s4() {
-      return Math.floor((1 + Math.random()) * 0x10000)
-        .toString(16)
-        .substring(1);
-    }
-    return "mermaidChart-" + s4() + s4();
-  }
-
-  var mermaidRegex = /^```mermaid((.*[\r\n]+)+?)?```$/im;
-
-function processMermaidBlockList(page) {
-
+var mermaidRegex = /^```mermaid((.*[\r\n]+)+?)?```$/im;
+var umlRegex = /^```uml((.*\n)+?)?```$/im;
+pageBeforeHooks.push(function(page) {  
   var match;
-
   while ((match = mermaidRegex.exec(page.content))) {
-    var rawBlock = match[0];
-    var mermaidContent = match[1];
-    page.content = page.content.replace(rawBlock, '<div class="mermaid">' +
-      mermaidContent + '</div>');
+    page.content = page.content.replace(match[0], `<div class="mermaid">${match[1]}</div>`);
   }
-
   return page;
-}
+}, function(page) {
+    var content = page.content;
+    var mode = this.output.name;
+    while((match = umlRegex.exec(content))) {
+        var rawBlock = match[0];
+        var umlBlock = match[1];
+        var md5 = crypto.createHash('md5').update(umlBlock).digest('hex');
+        var umlFile = path.join(umlPath, md5+'.uml');
+        fs.writeFileSync(umlFile, match[1], 'utf8');
+        var commandLine = `java -jar ${output}/${pluginName}/plantuml/plantuml.jar -tpng ${umlFile} -o ${umlPath}`;
+        try {
+            childProcess.execSync(commandLine);
+            var svgTag = ['![](', ('website' === mode ? '/gitbook/images/uml/' : ['http://localhost:4000/gitbook/images/uml/', '/'].join('')), md5, '.png)'].join('');
+            page.content = content = content.replace(rawBlock, svgTag);
+        } catch (error) {
+           console.warn(`UML编译失败，cause by:${error}`);
+           // fallback
+           page.content = content = content.replace(rawBlock, rawBlock.replace('```uml', '```'));
+        }
+    }
+    return page;
+});

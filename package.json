@@ -14,9 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "html-entities": "1.2.0",
-    "q": "1.1.2",
-    "phantom": "^0.8.3",
-    "phantomjs": "~1.9.18"
+    "q": "1.1.2"
   },
   "repository": {
     "type": "git",
